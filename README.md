@@ -440,7 +440,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 **Job6742**
 - 🤗 Hugging Face: [@Job6742](https://huggingface.co/Job6742)
-- 🐙 GitHub: [@Job6742]([https://github.com/Job6742](https://github.com/ponjose004/Raw-Material-Prediction)])
+- 🐙 GitHub: [@Job6742](https://github.com/ponjose004/Raw-Material-Prediction)
 
 ---
 
