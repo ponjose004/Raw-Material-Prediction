@@ -2,8 +2,8 @@
 
 <div align="center">
 
-# 🌐 [👉 CLICK HERE — LIVE WEB APP](https://huggingface.co/spaces/Job6742/raw-material-predictor)
-### 🔗 https://huggingface.co/spaces/Job6742/raw-material-predictor
+# 🌐 [👉 CLICK HERE — LIVE WEB APP](https://huggingface.co/spaces/Job6742/Raw_Material_Predictor)
+### 🔗 https://huggingface.co/spaces/Job6742/Raw_Material_Predictor
 
 *ML-powered inventory intelligence dashboard — works in any browser, no installation needed*
 
