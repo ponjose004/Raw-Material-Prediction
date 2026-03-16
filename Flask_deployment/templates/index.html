@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Raw Material Predictive Model</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --accent: #f0a500;
+      --accent2: #e05c00;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --card-radius: 10px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Rajdhani',sans-serif; min-height:100vh; }
+
+    /* ── HEADER ── */
+    .header {
+      background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-title { font-size: 1.6rem; font-weight:700; letter-spacing:2px; color:var(--accent); }
+    .header-sub { font-size:0.85rem; color:var(--muted); font-family:'IBM Plex Mono',monospace; margin-top:2px; }
+    .header-right { display:flex; gap:12px; align-items:center; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 9px 20px; border-radius: 6px; border: none; cursor: pointer;
+      font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:600;
+      letter-spacing:1px; transition: all 0.2s;
+    }
+    .btn-primary { background:var(--accent); color:#0d1117; }
+    .btn-primary:hover { background:#ffc233; }
+    .btn-outline { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+    .btn-outline:hover { background:rgba(240,165,0,0.1); }
+    .btn-danger { background:var(--red); color:#fff; }
+    .btn-danger:hover { background:#ff6b63; }
+    .btn-green { background:var(--green); color:#0d1117; }
+    .btn-green:hover { background:#56d364; }
+
+    /* ── LAYOUT ── */
+    .main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
+
+    /* ── ALERTS ── */
+    .alerts-section { margin-bottom: 20px; display:flex; flex-direction:column; gap:8px; }
+    .alert {
+      padding: 10px 16px; border-radius: 6px; font-size:0.95rem; font-weight:500;
+      display: flex; align-items:center; gap:10px;
+    }
+    .alert-danger { background: rgba(248,81,73,0.12); border-left:3px solid var(--red); color:#ff8b87; }
+    .alert-warning { background: rgba(210,153,34,0.12); border-left:3px solid var(--yellow); color:#e3b341; }
+    .alert-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .alert-danger .alert-dot { background:var(--red); }
+    .alert-warning .alert-dot { background:var(--yellow); }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-size:0.75rem; font-weight:600; letter-spacing:3px;
+      color:var(--muted); text-transform:uppercase; margin-bottom:14px;
+      font-family:'IBM Plex Mono',monospace;
+    }
+
+    /* ── STOCK BARS ── */
+    .stock-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+    .stock-card {
+      background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius);
+      padding:16px; cursor:pointer; transition:all 0.2s;
+      position:relative; overflow:hidden;
+    }
+    .stock-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+    .stock-card.selected { border-color:var(--accent); background:rgba(240,165,0,0.07); }
+    .stock-name { font-size:0.85rem; font-weight:600; color:var(--muted); letter-spacing:1px; margin-bottom:12px; word-break:break-word; }
+    .stock-bar-wrap { background:var(--bg3); border-radius:4px; height:120px; position:relative; margin-bottom:10px; overflow:hidden; }
+    .stock-bar-fill {
+      position:absolute; bottom:0; left:0; right:0;
+      border-radius:4px 4px 0 0; transition:height 0.8s cubic-bezier(.4,0,.2,1);
+    }
+    .bar-green { background: linear-gradient(to top, #2ea043, #3fb950); }
+    .bar-yellow { background: linear-gradient(to top, #9e6a03, #d29922); }
+    .bar-red { background: linear-gradient(to top, #b91c1c, #f85149); }
+    .stock-value { font-size:1.2rem; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+    .stock-pct { font-size:0.8rem; color:var(--muted); margin-top:2px; }
+    .stock-card-glow { position:absolute; top:0; left:0; right:0; height:2px; }
+    .glow-green { background:var(--green); }
+    .glow-yellow { background:var(--yellow); }
+    .glow-red { background:var(--red); }
+
+    /* ── PREDICTION PANEL ── */
+    .prediction-section { display:none; }
+    .prediction-section.visible { display:block; }
+    .panel-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:16px;
+    }
+    .panel-title { font-size:1.2rem; font-weight:700; color:var(--accent); letter-spacing:1px; }
+    .metrics-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+    .metric-card {
+      background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius);
+      padding:18px; text-align:center;
+    }
+    .metric-label { font-size:0.75rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; font-family:'IBM Plex Mono',monospace; }
+    .metric-value { font-size:1.8rem; font-weight:700; font-family:'IBM Plex Mono',monospace; color:var(--accent); }
+    .metric-sub { font-size:0.8rem; color:var(--muted); margin-top:4px; }
+    .charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:20px; }
+    .chart-card {
+      background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius); padding:18px;
+    }
+    .chart-title { font-size:0.8rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; font-family:'IBM Plex Mono',monospace; }
+    .chart-wrap { position:relative; height:220px; }
+
+    /* ── ADD DATA FORM ── */
+    .add-data-section {
+      background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius);
+      padding:20px; margin-bottom:20px; display:none;
+    }
+    .add-data-section.visible { display:block; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:12px; align-items:end; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-label { font-size:0.75rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; font-family:'IBM Plex Mono',monospace; }
+    .form-input {
+      background:var(--bg3); border:1px solid var(--border); border-radius:6px;
+      color:var(--text); padding:9px 12px; font-family:'Rajdhani',sans-serif;
+      font-size:1rem; outline:none; transition:border-color 0.2s;
+    }
+    .form-input:focus { border-color:var(--accent); }
+
+    /* ── UPLOAD SECTION ── */
+    .upload-section {
+      background:var(--bg2); border:1px solid var(--border); border-radius:var(--card-radius);
+      padding:20px; margin-bottom:20px;
+    }
+    .upload-zone {
+      border:2px dashed var(--border); border-radius:8px; padding:30px;
+      text-align:center; cursor:pointer; transition:all 0.2s;
+    }
+    .upload-zone:hover { border-color:var(--accent); background:rgba(240,165,0,0.04); }
+    .upload-icon { font-size:2rem; margin-bottom:8px; }
+    .upload-text { color:var(--muted); font-size:0.95rem; }
+
+    /* ── LOADING ── */
+    .loading-overlay {
+      display:none; position:fixed; inset:0; background:rgba(13,17,23,0.8);
+      z-index:999; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+    }
+    .loading-overlay.show { display:flex; }
+    .spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-text { color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:0.85rem; }
+
+    /* ── TOAST ── */
+    .toast {
+      position:fixed; bottom:24px; right:24px; z-index:9999;
+      background:var(--bg2); border:1px solid var(--border); border-radius:8px;
+      padding:14px 20px; font-size:0.95rem; transform:translateY(80px); opacity:0;
+      transition:all 0.3s; max-width:360px;
+    }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { border-left:3px solid var(--green); }
+    .toast.error { border-left:3px solid var(--red); }
+
+    /* ── TOP CONTROLS ── */
+    .controls-bar {
+      display:flex; gap:12px; align-items:center; margin-bottom:20px; flex-wrap:wrap;
+    }
+    .material-select {
+      background:var(--bg2); border:1px solid var(--border); border-radius:6px;
+      color:var(--text); padding:9px 14px; font-family:'Rajdhani',sans-serif;
+      font-size:1rem; outline:none; min-width:220px; cursor:pointer;
+    }
+    .material-select:focus { border-color:var(--accent); }
+
+    /* ── CONFIDENCE RANGE ── */
+    .confidence-row { display:flex; gap:12px; margin-bottom:20px; }
+    .conf-card {
+      flex:1; background:var(--bg2); border:1px solid var(--border);
+      border-radius:var(--card-radius); padding:14px; text-align:center;
+    }
+    .conf-label { font-size:0.7rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; font-family:'IBM Plex Mono',monospace; }
+    .conf-value { font-size:1.1rem; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+    .conf-high { color: var(--red); }
+    .conf-mid  { color: var(--accent); }
+    .conf-low  { color: var(--green); }
+
+    @media(max-width:768px) {
+      .header { flex-direction:column; gap:12px; align-items:flex-start; }
+      .main { padding:16px; }
+      .metrics-row { grid-template-columns:1fr; }
+      .charts-row { grid-template-columns:1fr; }
+      .form-row { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Running prediction model...</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-title">⚙ RAW MATERIAL PREDICTIVE MODEL</div>
+    <div class="header-sub">ML-POWERED INVENTORY INTELLIGENCE DASHBOARD</div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-outline" onclick="toggleUpload()">↑ Upload File</button>
+    <button class="btn btn-primary" id="addDataBtn" onclick="toggleAddData()" style="display:none">+ Add Data</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Alerts -->
+  {% if alerts %}
+  <div class="alerts-section">
+    {% for a in alerts %}
+    <div class="alert alert-{{ a.type }}">
+      <div class="alert-dot"></div>
+      {{ a.msg }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Upload section -->
+  <div class="upload-section" id="uploadSection" style="display:none">
+    <div class="section-title">Upload Master Excel File</div>
+    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📂</div>
+      <div class="upload-text">Click to upload your Excel file — will be split by material automatically</div>
+      <input type="file" id="fileInput" accept=".xlsx" style="display:none" onchange="uploadFile(this)"/>
+    </div>
+  </div>
+
+  <!-- Add Data form -->
+  <div class="add-data-section" id="addDataSection">
+    <div class="section-title">Add New Daily Entry</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="entryDate"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Purchase Qty</label>
+        <input type="number" class="form-input" id="entryPurchase" placeholder="0.00" step="0.001"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Used Qty</label>
+        <input type="number" class="form-input" id="entryUsage" placeholder="0.00" step="0.001"/>
+      </div>
+      <button class="btn btn-green" onclick="submitAddData()">Save Entry</button>
+    </div>
+  </div>
+
+  <!-- Stock overview -->
+  <div class="section-title">Stock Level Overview — Click a material to analyse</div>
+  <div class="stock-grid">
+    {% for s in stock %}
+    <div class="stock-card" id="card-{{ loop.index }}" onclick="selectMaterial('{{ s.file }}', {{ loop.index }})">
+      <div class="stock-card-glow glow-{{ s.status }}"></div>
+      <div class="stock-name">{{ s.name }}</div>
+      <div class="stock-bar-wrap">
+        <div class="stock-bar-fill bar-{{ s.status }}" style="height:{{ s.pct }}%"></div>
+      </div>
+      <div class="stock-value" style="color:var(--{% if s.status == 'green' %}green{% elif s.status == 'yellow' %}yellow{% else %}red{% endif %})">
+        {{ '{:,.1f}'.format(s.latest_closing) }}
+      </div>
+      <div class="stock-pct">{{ s.pct }}% of max · {{ s.status.upper() }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-bar">
+    <select class="material-select" id="materialSelect" onchange="selectMaterial(this.value, null)">
+      <option value="">— Select a material —</option>
+      {% for m in materials %}
+      <option value="{{ m }}">{{ m.replace('.xlsx','').replace('_',' ') }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Prediction panel -->
+  <div class="prediction-section" id="predictionSection">
+    <div class="panel-header">
+      <div class="panel-title" id="panelTitle">—</div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-label">Current Stock</div>
+        <div class="metric-value" id="metricOpening">—</div>
+        <div class="metric-sub">latest closing balance</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Predicted Daily Usage</div>
+        <div class="metric-value" id="metricUsage">—</div>
+        <div class="metric-sub">units / day (ML forecast)</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Stock Will Last</div>
+        <div class="metric-value" id="metricDays" style="font-size:1.4rem">—</div>
+        <div class="metric-sub">at predicted usage rate</div>
+      </div>
+    </div>
+
+    <!-- Confidence range -->
+    <div class="confidence-row">
+      <div class="conf-card">
+        <div class="conf-label">High Consumption</div>
+        <div class="conf-value conf-high" id="confHigh">—</div>
+      </div>
+      <div class="conf-card">
+        <div class="conf-label">Normal</div>
+        <div class="conf-value conf-mid" id="confMid">—</div>
+      </div>
+      <div class="conf-card">
+        <div class="conf-label">Low Consumption</div>
+        <div class="conf-value conf-low" id="confLow">—</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">10-Month Stock Availability (Bar)</div>
+        <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Last 30 Days Trend (Line)</div>
+        <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+let barChartInst = null;
+let lineChartInst = null;
+let currentFile = null;
+
+// Set today as default date
+document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('show', show);
+}
+
+function toggleUpload() {
+  const s = document.getElementById('uploadSection');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleAddData() {
+  const s = document.getElementById('addDataSection');
+  s.classList.toggle('visible');
+}
+
+function selectMaterial(file, cardIdx) {
+  if (!file) return;
+  currentFile = file;
+  // Update select
+  document.getElementById('materialSelect').value = file;
+  // Highlight card
+  document.querySelectorAll('.stock-card').forEach(c => c.classList.remove('selected'));
+  if (cardIdx) document.getElementById('card-'+cardIdx)?.classList.add('selected');
+  // Show add data btn
+  document.getElementById('addDataBtn').style.display = 'inline-block';
+  // Run prediction
+  showLoading(true);
+  fetch(`/api/predict/${encodeURIComponent(file)}`)
+    .then(r => r.json())
+    .then(res => {
+      showLoading(false);
+      if (!res.success) { showToast('Prediction error: ' + res.error, 'error'); return; }
+      const d = res.data;
+      document.getElementById('predictionSection').classList.add('visible');
+      document.getElementById('panelTitle').textContent = file.replace('.xlsx','').replace(/_/g,' ');
+      document.getElementById('metricOpening').textContent = d.opening.toLocaleString();
+      document.getElementById('metricUsage').textContent = d.predicted_usage.toLocaleString();
+      document.getElementById('metricDays').textContent = d.days_remaining;
+      document.getElementById('confHigh').textContent = d.days_high;
+      document.getElementById('confMid').textContent = d.days_remaining;
+      document.getElementById('confLow').textContent = d.days_low;
+      renderCharts(d);
+    })
+    .catch(e => { showLoading(false); showToast('Network error', 'error'); });
+}
+
+function renderCharts(d) {
+  const gridColor = 'rgba(255,255,255,0.05)';
+  const tickColor = '#7d8590';
+  // Bar chart
+  if (barChartInst) barChartInst.destroy();
+  barChartInst = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: d.bar_dates,
+      datasets: [{
+        data: d.bar_vals,
+        backgroundColor: 'rgba(58,169,80,0.6)',
+        borderColor: '#3fb950',
+        borderWidth: 0,
+        borderRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      scales: {
+        x: { display:false, grid:{ color:gridColor } },
+        y: { ticks:{ color:tickColor, font:{size:10} }, grid:{ color:gridColor } }
+      }
+    }
+  });
+  // Line chart
+  if (lineChartInst) lineChartInst.destroy();
+  lineChartInst = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: d.line_dates,
+      datasets: [{
+        data: d.line_vals,
+        borderColor: '#f0a500',
+        backgroundColor: 'rgba(240,165,0,0.08)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#f0a500',
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      scales: {
+        x: { display:false, grid:{ color:gridColor } },
+        y: { ticks:{ color:tickColor, font:{size:10} }, grid:{ color:gridColor } }
+      }
+    }
+  });
+}
+
+function submitAddData() {
+  if (!currentFile) { showToast('Please select a material first', 'error'); return; }
+  const date = document.getElementById('entryDate').value;
+  const purchase = document.getElementById('entryPurchase').value;
+  const usage = document.getElementById('entryUsage').value;
+  if (!date || purchase === '' || usage === '') { showToast('Please fill all fields', 'error'); return; }
+  showLoading(true);
+  fetch('/api/add_data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_name: currentFile, date, purchase, usage })
+  })
+  .then(r => r.json())
+  .then(res => {
+    showLoading(false);
+    if (res.success) {
+      showToast(`Entry saved! New closing: ${res.new_closing.toLocaleString()}`, 'success');
+      document.getElementById('entryPurchase').value = '';
+      document.getElementById('entryUsage').value = '';
+      selectMaterial(currentFile, null);
+    } else {
+      showToast('Error: ' + res.error, 'error');
+    }
+  })
+  .catch(() => { showLoading(false); showToast('Network error', 'error'); });
+}
+
+function uploadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  showLoading(true);
+  fetch('/api/upload', { method:'POST', body:fd })
+    .then(r => r.json())
+    .then(res => {
+      showLoading(false);
+      if (res.success) {
+        showToast(`Saved: ${res.saved.join(', ')}`, 'success');
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        showToast('Upload error: ' + res.error, 'error');
+      }
+    })
+    .catch(() => { showLoading(false); showToast('Network error', 'error'); });
+}
+</script>
+</body>
+</html>
