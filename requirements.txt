@@ -1,0 +1,7 @@
+PyQt5
+pandas
+scikit-learn
+numpy
+matplotlib
+watchdog
+openpyxl

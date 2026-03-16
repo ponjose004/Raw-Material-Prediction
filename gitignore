@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+env/
+
+# PyInstaller build output
+dist/
+build/
+*.spec
+
+# Actual confidential data - never commit real data
+# raw/ folder is included but only with SAMPLE data
+# Replace raw/*.xlsx with your real data locally (never push real data)
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
